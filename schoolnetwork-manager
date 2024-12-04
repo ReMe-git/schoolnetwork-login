@@ -1,0 +1,74 @@
+#!/usr/bin/python
+
+import sys
+import requests
+import json
+import random
+import base64
+import getpass
+
+passpath = "/home/reme/.cache/school-network.pass"
+
+def store_name_passwd():
+    name = input("input name: ")
+    firstpasswd = getpass.getpass("input password: ")
+    secondpasswd = getpass.getpass("inout password again: ")
+    if (secondpasswd != firstpasswd):
+        print("second passwd is different from first one")
+        return
+    text = f"{name}:{firstpasswd}"
+    try:
+        encrypt = str(base64.encodebytes(text.encode()), encoding='utf-8').replace('\n', '')
+        file = open(passpath, "w+")
+        file.write(encrypt)
+        file.close()
+    except:
+        print("Failed store name and passwd")
+
+def get_name_passwd_from_file():
+    try:
+        file = open(passpath, "r")
+        encrypt = file.readline()
+        file.close()
+        if (len(encrypt) > 0):
+            decrypt = str(base64.decodebytes(encrypt.encode(encoding='utf-8')), encoding='utf-8')
+            name, passwd = decrypt.split(':')
+            return (True, name, passwd)
+    except:
+        print("Failed get name and passwd")
+    return (False, "", "")
+
+def get_name_passwd_from_input():
+    name = input("input name: ")
+    passwd = getpass.getpass("input password: ")
+    return (name, passwd)
+
+def login_school_network(name, passwd):
+    try:
+        url=f"http://10.255.0.19/drcom/login?callback=dr1003&DDDDD={name}%40cmcc&upass={passwd}&0MKKey=123456&R1=0&R3=0&R6=0&para=00&v6ip=&v={random.randint(1000, 10000)}"
+        req = requests.get(url = url)
+    except:
+        print("Login failed, please check your network connection X_X!")
+        return
+    res = json.loads(req.text.split("(")[1].split(")")[0])
+    if res['result']== 1:
+        print(f"Login succeed, ip address is {res['v46ip']} OvO.")
+    else:
+        print("Login falied, pleace check your username or password O_o?")
+
+def print_usage():
+    print("Usage:")
+    print(" login: login network with name and passwd.")
+    print(" store: store your username and passwd.")
+
+if __name__ == "__main__":
+    argc = len(sys.argv)
+    if argc == 2 and sys.argv[1] == "login":
+        res, name, passwd = get_name_passwd_from_file()
+        if (res == False):
+            name, passwd = get_name_passwd_from_input()
+        login_school_network(name, passwd)
+    elif argc == 2 and sys.argv[1] == "store":
+        store_name_passwd()
+    else:
+        print_usage()
